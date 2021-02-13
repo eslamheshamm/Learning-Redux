@@ -503,8 +503,8 @@ const render = () => {
 			eleem.innerHTML =
 				"you rate  : " +
 				lastAction.payload.rating +
-				" by " +
-				lastAction.payload.userName;
+				" for " +
+				lastAction.payload.movieName;
 			break;
 		case "ADD_MOVIE_TO_WATCHLIST":
 			let el = document.createElement("li");

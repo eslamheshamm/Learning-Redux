@@ -6,25 +6,50 @@
 		<title>Hello World</title>
 	</head>
 	<body>
-		<h1>Hello World!</h1>
-		<p>addUser('eslam','esl2mhesham')</p>
-		<p>loginUser(1,'eslam')</p>
-		<p>addMovie("darkest hour", 2017,"steven spielberg","drama",120)</p>
-		<p>addMovie("nightcrawler", 2014,"dan gilroy","drama",120)</p>
-		<p>addMovieToUserWatchList(1,1)</p>
-		<p>addMovieToUserFavList(1,1)</p>
-		<p>getUserWatchList(1)</p>
-		<h2>all movies</h2>
-		<ul id="ul_movies"></ul>
+		<main>
+			<section>
+				<h1>Hello World!</h1>
+				<span>(userName,userEmail)</span>
+				<p>addUser('eslam','esl2mhesham@gmail.com')</p>
+				<span>(userId,userName)</span>
+				<p>loginUser(1,'eslam')</p>
+				<span>(movieName,year,director,category,movieTime)</span>
+				<p>addMovie("darkest hour", 2017,"steven spielberg","drama",120)</p>
+				<p>addMovie("nightcrawler", 2014,"dan gilroy","drama",120)</p>
+				<span>(movieId,userId)</span>
+				<p>addMovieToUserWatchList(1,1)</p>
+				<p>addMovieToUserWatchList(2,1)</p>
+				<span>(movieId,userId)</span>
+				<p>addMovieToUserFavList(1,1)</p>
+				<p>addMovieToUserFavList(2,1)</p>
+				<span>(movieName,userName,rate)</span>
+				<p>rateMovie('darkest hour','eslam',10)</p>
+				<p>rateMovie('nightcrawler','eslam',10)</p>
+			</section>
+			<section>
+				<h2>all movies</h2>
+				<hr />
+				<ul id="ul_movies"></ul>
 
-		<h1 id="welcome"></h1>
-		<h2>Fav Movies</h2>
-		<p id="is_fav"></p>
-		<ul id="fav"></ul>
-		<h2>Watchlist</h2>
-		<ul id="watch"></ul>
-		<h2>rates</h2>
-		<ul id="rate"></ul>
+				<h1 id="welcome"></h1>
+				<h2>Fav Movies</h2>
+				<p id="is_fav"></p>
+				<ul id="fav"></ul>
+				<h2>Watchlist</h2>
+				<ul id="watch"></ul>
+				<h2>rates</h2>
+				<ul id="rate"></ul>
+			</section>
+		</main>
 	</body>
+	<style>
+		main {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+		}
+		span {
+			color: red;
+		}
+	</style>
 	<script src="reducer.js"></script>
 </html>
