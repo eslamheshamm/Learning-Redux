@@ -47,7 +47,7 @@ const USERS = {
 	GET_LOGIN_USERS: "GET_LOGIN_USERS",
 };
 const USER = {
-	ADD_MOVIE_TO_WATCHLIST: "MOVIE_TO_WATCHLIST",
+	ADD_MOVIE_TO_WATCHLIST: "ADD_MOVIE_TO_WATCHLIST",
 	REMOVE_MVOIE_FROM_WATCHLIST: "REMOVE_MVOIE_FROM_WATCHLIST",
 	GET_USERS_MOVIES_WATCHLIST: "GET_USERS_MOVIES_WATCHLIST",
 	GET_USER_WATCHLIST: "GET_USER_WATCHLIST",
@@ -56,6 +56,7 @@ const USER = {
 	START_WATCH: "START_WATCH",
 	STOP_WATCH: "STOP_WATCH",
 };
+
 // id
 let lastMovieId = 0;
 let userId = 0;
@@ -82,7 +83,7 @@ const movies = (state = [], action) => {
 				...state.slice(0, index),
 				{
 					...state[index],
-					name: action.payload.name,
+					movieName: action.payload.movieName,
 				},
 				...state.slice(index + 1),
 			];
@@ -98,6 +99,29 @@ const movies = (state = [], action) => {
 				},
 				...state.slice(index1 + 1), // everything after current post
 			];
+		case MOVIES.RATE_MOVIE:
+			return state.map((movie) => {
+				if (movie.movieName === action.payload.movieName) {
+					if (movie.rating.length > 0) {
+						const userExist = movie.rating.find(
+							(rate) => rate.userName === action.payload.userName
+						);
+						if (userExist.userName === action.payload.userName) {
+							movie.rating.filter(
+								(user) => user.userName != action.payload.userName
+							);
+						}
+					}
+					movie.rating = [
+						...movie.rating,
+						{
+							userName: action.payload.userName,
+							rating: action.payload.rating,
+						},
+					];
+				}
+				return movie;
+			});
 		default:
 			return state;
 	}
@@ -113,6 +137,7 @@ const addUsers = (state = [], action) => {
 					userName: action.payload.userName,
 					userEmail: action.payload.userEmail,
 					isLogin: false,
+					watchingNow: [],
 				},
 			];
 		case USERS.FETCH_USERS:
@@ -127,9 +152,8 @@ const usersAuthorization = (state = [], action) => {
 			return [
 				...state,
 				{
-					userId: action.payload.userId,
-					userName: action.payload.userName,
-					isLogin: true,
+					...state.payload,
+					...action.payload,
 				},
 			];
 		case USERS.LOGOUT_USER:
@@ -152,26 +176,39 @@ const userWatchList = (state = [], action) => {
 				},
 			];
 		case USER.START_WATCH:
-			return [
-				...state,
-				{
-					payload: {
-						movieId,
-						user,
-						userId,
-						watchingDetails: [
-							{
-								WatchedMinuts: 0,
-								started: true,
-								endTime: timeStarted,
-								date: UTC,
-							},
-						],
-					},
-				},
-			];
+			return state.map((user) => {
+				if (user.userName === action.payload.userName) {
+					console.log(user);
+					user.watchingNow = [
+						...user.watchingNow,
+						{
+							movieName: action.payload.movieName,
+							isPlaying: true,
+							lastedTime: 0,
+							timeDuratuin: [{ play: Date.now() }],
+						},
+					];
+				}
+				return user;
+			});
 		case USER.STOP_WATCH:
-			return [...state, console.log(...state)];
+			return state.map((user) => {
+				if (user.userName === action.payload.userName) {
+					console.log(user);
+					user.watchingNow.map((movie) => {
+						if (movie.movieName === action.payload.movieName) {
+							movie.isPlaying = false;
+							movie.timeDuratuin[
+								movie.timeDuratuin.length - 1
+							].pause = Date.now();
+							movie.lastedTime =
+								movie.movieTime -
+								(action.payload.pause - action.payload.play) / 60000;
+						}
+					});
+				}
+				return user;
+			});
 		case USER.REMOVE_MVOIE_FROM_WATCHLIST:
 			const index = state.findIndex(
 				(movie) => movie.movieId == action.payload.movieId
@@ -198,6 +235,19 @@ const userFavList = (state = [], action) => {
 			return state;
 	}
 };
+const lastAction = (state = null, action) => {
+	return action;
+};
+// action creators
+const rateMovieCreator = (movieName, userName, rating) => ({
+	type: MOVIES.RATE_MOVIE,
+	payload: { movieName, userName, rating },
+});
+
+const pauseMovieCreator = (username, movieName, play, pause) => ({
+	type: actionTypes.PAUSE_MOVIE,
+	payload: { username, movieName, play, pause },
+});
 // building my store
 const netlflex = combineReducers({
 	movies,
@@ -205,48 +255,46 @@ const netlflex = combineReducers({
 	usersAuthorization,
 	userWatchList,
 	userFavList,
+	lastAction,
 });
 const store = createStore(netlflex);
 // functions for actions
-const addMovie = (name, releaseYear, director, genres) => {
+const addMovie = (movieName, releaseYear, director, genres, time) => {
 	store.dispatch({
 		type: MOVIES.ADD_MOVIE,
 		payload: {
 			movieId: ++lastMovieId,
-			name,
+			movieName,
 			releaseYear,
 			director,
 			genres,
+			time,
+			rating: [],
 		},
 	});
 };
+const rateMovie = (movieName, userName, rating) => {
+	user = store
+		.getState()
+		.usersAuthorization.find((user) => user.userId === userId);
+	if (user.isLogin) {
+		store.dispatch(rateMovieCreator(movieName, userName, rating));
+	} else {
+		console.log("PLEASE LOGIN FIRST!");
+	}
+};
 const addMovieToUserWatchList = (movieId, userId) => {
-	// let users = store.getState().usersAuthorization;
-	// let userData = users;
-	// // .filter((user) => user.userId == userId)
-	// // .forEach((user) => {
-	// // 	console.log(user);
-	// // });
-	// console.log(userData);
-	if (store.getState().usersAuthorization.length > 0) {
-		const jsonDate = new Date().toJSON();
-		let UTC = new Date(jsonDate).toUTCString();
-		user = store.getState().usersAuthorization.filter((user) => {
-			return user.userId == userId;
-		});
+	user = store
+		.getState()
+		.usersAuthorization.find((user) => user.userId === userId);
+	if (user.userId === userId) {
 		return store.dispatch({
 			type: USER.ADD_MOVIE_TO_WATCHLIST,
 			payload: {
 				movieId,
-				user,
 				userId,
-				watchingDetails: [
-					{
-						WatchedMinuts: 0,
-						started: false,
-						date: UTC,
-					},
-				],
+				rating: [],
+				watchingNow: [],
 			},
 		});
 	} else {
@@ -254,15 +302,14 @@ const addMovieToUserWatchList = (movieId, userId) => {
 	}
 };
 const addMovieToUserFavList = (movieId, userId) => {
-	if (store.getState().usersAuthorization.length > 0) {
-		user = store.getState().usersAuthorization.filter((user) => {
-			return user.userId == userId;
-		});
+	user = store
+		.getState()
+		.usersAuthorization.find((user) => user.userId === userId);
+	if (user.userId === userId) {
 		return store.dispatch({
 			type: USER.ADD_MOVIE_TO_FAV,
 			payload: {
 				movieId,
-				user,
 				userId,
 			},
 		});
@@ -278,12 +325,12 @@ const removeMovie = (movieId) => {
 		},
 	});
 };
-const updateMovie = (movieId, name) => {
+const updateMovie = (movieId, movieName) => {
 	store.dispatch({
 		type: MOVIES.UPDATE_MOVIE,
 		payload: {
 			movieId,
-			name,
+			movieName,
 		},
 	});
 };
@@ -312,6 +359,8 @@ const loginUser = (userId, userName) => {
 		payload: {
 			userId,
 			userName,
+			watchingNow: [],
+			isLogin: true,
 		},
 	});
 };
@@ -345,10 +394,12 @@ const getUserWatchList = (userId) => {
 	store.getState().userWatchList.map((movie) => {
 		if (movie.userId == userId)
 			userMovies.push({
+				movieName: movie.movieName,
 				movieId: movie.movieId,
-				watchingDetails: movie.watchingDetails,
-				user: user,
+				watchingNow: movie.watchingNow,
+				rating: movie.rating,
 			});
+		console.log(movie);
 	});
 	return userMovies;
 };
@@ -363,60 +414,112 @@ const getUserFavList = (userId) => {
 	});
 	return userMovies;
 };
-const startWatchMovie = (movieId, userId) => {
-	const jsonDate = new Date().toJSON();
-	let UTC = new Date(jsonDate).toUTCString();
-	//
-	let timeStarted = Date.now();
-	if (store.getState().usersAuthorization.length > 0) {
-		user = store.getState().usersAuthorization.filter((user) => {
-			return user.userId == userId;
+const startWatchMovie = (userId, movieId) => {
+	user = store
+		.getState()
+		.usersAuthorization.find((user) => user.userId === userId);
+	if (user.isLogin) {
+		let movieTime;
+		let movieName;
+		store.getState().movies.map((movie) => {
+			if (movie.movieId === movieId) {
+				movieTime = movie.time;
+				movieName = movie.movieName;
+			}
 		});
+		store.dispatch({
+			type: USER.START_WATCH,
+			payload: { movieId, movieTime, userId, movieName },
+		});
+	} else {
+		console.log("You are not logged in!");
 	}
-	store.dispatch({
-		type: USER.START_WATCH,
-		payload: {
-			movieId,
-			user,
-			userId,
-			watchingDetails: [
-				{
-					WatchedMinuts: 0,
-					started: true,
-					startedTime: timeStarted,
-					date: UTC,
-				},
-			],
-		},
-	});
 };
 const stopWatchMovie = (movieId, userId) => {
-	const jsonDate = new Date().toJSON();
-	let UTC = new Date(jsonDate).toUTCString();
-	//
-	if (store.getState().usersAuthorization.length > 0) {
-		user = store.getState().usersAuthorization.filter((user) => {
-			return user.userId == userId;
+	let user = store
+		.getState()
+		.userWatchList.find((user) => user.userId === userId);
+	if (user) {
+		let play, pause;
+		user.watchingNow.map((watching) => {
+			play = watching.timeDuratuin[watching.timeDuratuin.length - 1].play;
+			pause = watching.timeDuratuin[watching.timeDuratuin.length - 1].pause;
+			console.log("pause", pause);
 		});
+		// store.dispatch(pauseMovieCreator(username, movieId, play, pause));
+		store.dispatch({
+			type: USER.STOP_WATCH,
+			payload: { userId, movieId, play, pause },
+		});
+	} else {
+		console.log("You are not logged in!");
 	}
-	store.dispatch({
-		type: USER.START_WATCH,
-		payload: {
-			movieId,
-			user,
-			userId,
-			watchingDetails: [
-				{
-					WatchedMinuts: 0,
-					started: true,
-					endTime: timeStarted,
-					date: UTC,
-				},
-			],
-		},
-	});
 };
-// case MOVIES.WATCHED:
-// 	return state.map((movie) =>
-// 		movie.id !== action.payload.id ? movie : { ...movie, watched: true }
-// 	);
+
+const render = () => {
+	var lastAction = store.getState().lastAction;
+	switch (lastAction.type) {
+		case "ADD_MOVIE":
+			let li = document.createElement("li");
+			li.id = lastAction.payload.movieId;
+			document.getElementById("ul_movies").appendChild(li);
+			li.innerHTML = lastAction.payload.movieName;
+			break;
+		case "REMOVE_MOVIE":
+			var elem = document.getElementById(lastAction.payload);
+			elem.remove(elem);
+			break;
+		case "LOGIN_USER":
+			document.getElementById("welcome").innerText =
+				"Welcome " + lastAction.payload.userName;
+
+			break;
+		case "UPDATE_MOVIE":
+			document.getElementById(lastAction.payload.movieId).innerText =
+				lastAction.payload.movieName;
+			break;
+		case "ADD_MOVIE_TO_FAV":
+			document.getElementById("fav");
+			let ele = document.createElement("li");
+			ele.id = lastAction.payload.movieId;
+			document.getElementById("fav").appendChild(ele);
+			const index = store
+				.getState()
+				.movies.findIndex(
+					(movie) => movie.movieId == lastAction.payload.movieId
+				);
+			ele.innerHTML = store.getState().movies[index].movieName;
+			break;
+
+		case "RATE_MOVIE":
+			let eleem = document.createElement("li");
+			eleem.id = lastAction.payload.movieId;
+			document.getElementById("rate").appendChild(eleem);
+			const i = store
+				.getState()
+				.movies.findIndex(
+					(movie) => movie.movieId == lastAction.payload.movieId
+				);
+			eleem.innerHTML =
+				"you rate  : " +
+				lastAction.payload.rating +
+				" by " +
+				lastAction.payload.userName;
+			break;
+		case "ADD_MOVIE_TO_WATCHLIST":
+			let el = document.createElement("li");
+			el.id = lastAction.payload.movieId;
+			document.getElementById("watch").appendChild(el);
+			const idx = store
+				.getState()
+				.movies.findIndex(
+					(movie) => movie.movieId == lastAction.payload.movieId
+				);
+			el.innerHTML = store.getState().movies[idx].movieName;
+			break;
+	}
+};
+
+store.subscribe(() => {
+	render();
+});
